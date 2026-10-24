@@ -1,0 +1,19 @@
+# local configuration and data
+config.json
+captures/
+bin/
+*.zip
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# build artifacts
+obj/
+.vs/
+*.user
+*.pdb
+*.log
+*.tmp

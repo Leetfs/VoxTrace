@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Build GUI
+        shell: cmd
+        run: scripts\build_gui.cmd
+
+      - name: Build FastScan
+        shell: cmd
+        run: scripts\build_fastscan.cmd
+
+      - name: Stage source archive
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist, stage\src | Out-Null
+          robocopy . stage\src /E /XD .git bin captures obj __pycache__ .vs /XF config.json /NFL /NDL /NJH /NJS /NP | Out-Null
+          Compress-Archive -Path stage\src\* -DestinationPath "dist/VoxTrace-${{ github.ref_name }}-source.zip" -Force
+
+      - name: Stage Windows bundle
+        shell: pwsh
+        run: |
+          $bundle = "stage\bundle"
+          New-Item -ItemType Directory -Force $bundle | Out-Null
+          Copy-Item bin\VoxTrace.exe, bin\FastScan.exe $bundle
+          Copy-Item voxtrace, scripts, docs, config.example.json, README.md, DISCLAIMER.md, LICENSE, THIRD_PARTY.md, CHANGELOG.md, requirements.txt $bundle -Recurse
+          Compress-Archive -Path "$bundle\*" -DestinationPath "dist/VoxTrace-${{ github.ref_name }}-win64.zip" -Force
+
+      - name: Generate checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem dist\*.zip | ForEach-Object {
+            "$($_.Name)  $((Get-FileHash $_.FullName -Algorithm SHA256).Hash)"
+          } | Set-Content dist\SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true

@@ -1,0 +1,17 @@
+{
+  "vrchat_dir": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\VRChat",
+  "opus_dll": "",
+  "relay_exe": "bin\\VrcWintunPoc.exe",
+  "wintun_dll": "bin\\wintun.dll",
+  "python": "",
+  "captures_dir": "captures",
+  "eventparse_exe": "bin\\eventparse\\eventparse.exe",
+  "dotnet_root": "",
+  "pagefile_drive": "C:",
+  "relay_prefix": "82.117.224.0/24",
+  "relay_port": 27002,
+  "scan_workers": 4,
+  "fastscan_threads": 4,
+  "settle_seconds": 2,
+  "drain_timeout": 10
+}
