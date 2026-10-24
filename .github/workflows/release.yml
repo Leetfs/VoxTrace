@@ -1,4 +1,6 @@
-﻿on:
+﻿name: Release
+
+on:
   push:
     tags: ["v*"]
   workflow_dispatch:
@@ -30,13 +32,8 @@ jobs:
       - name: Stage source archive
         shell: pwsh
         run: |
-          $tmp = $env:RUNNER_TEMP
-          $src = Join-Path $tmp "vox-src"
-          Remove-Item $src -Recurse -Force -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Force $src | Out-Null
-          robocopy . $src /E /XD .git bin captures obj __pycache__ .vs dist stage /XF config.json /NFL /NDL /NJH /NJS /NP | Out-Null
           New-Item -ItemType Directory -Force dist | Out-Null
-          Compress-Archive -Path "$src\*" -DestinationPath "dist/VoxTrace-${{ github.ref_name }}-source.zip" -Force
+          git archive --format=zip --output="dist/VoxTrace-${{ github.ref_name }}-source.zip" HEAD
 
       - name: Stage Windows bundle
         shell: pwsh
