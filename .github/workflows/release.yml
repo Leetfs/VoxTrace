@@ -1,6 +1,4 @@
-name: Release
-
-on:
+﻿on:
   push:
     tags: ["v*"]
   workflow_dispatch:
@@ -32,14 +30,19 @@ jobs:
       - name: Stage source archive
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force dist, stage\src | Out-Null
-          robocopy . stage\src /E /XD .git bin captures obj __pycache__ .vs /XF config.json /NFL /NDL /NJH /NJS /NP | Out-Null
-          Compress-Archive -Path stage\src\* -DestinationPath "dist/VoxTrace-${{ github.ref_name }}-source.zip" -Force
+          $tmp = $env:RUNNER_TEMP
+          $src = Join-Path $tmp "vox-src"
+          Remove-Item $src -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force $src | Out-Null
+          robocopy . $src /E /XD .git bin captures obj __pycache__ .vs dist stage /XF config.json /NFL /NDL /NJH /NJS /NP | Out-Null
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path "$src\*" -DestinationPath "dist/VoxTrace-${{ github.ref_name }}-source.zip" -Force
 
       - name: Stage Windows bundle
         shell: pwsh
         run: |
-          $bundle = "stage\bundle"
+          $bundle = Join-Path $env:RUNNER_TEMP "vox-bundle"
+          Remove-Item $bundle -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force $bundle | Out-Null
           Copy-Item bin\VoxTrace.exe, bin\FastScan.exe $bundle
           Copy-Item voxtrace, scripts, docs, config.example.json, README.md, DISCLAIMER.md, LICENSE, THIRD_PARTY.md, CHANGELOG.md, requirements.txt $bundle -Recurse
