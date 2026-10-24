@@ -107,7 +107,7 @@ scripts\build_fastscan.cmd
 | `eventparse_exe` | 可选的名字解析辅助程序 |
 | `fastscan_exe` | 高速扫描器路径 |
 | `pagefile_drive` | pagefile 所在盘符 |
-| `relay_prefix` / `relay_port` | 中继接管的路由前缀与端口 |
+| `relay_prefix` / `relay_port` | 中继接管的路由前缀（可逗号分隔多个）与端口 |
 | `scan_workers` | Python 兜底扫描并发数 |
 | `fastscan_threads` | FastScan 直接读卷的线程数 |
 | `settle_seconds` | 无法查询修改页列表时的固定等待 |
@@ -236,6 +236,39 @@ python -m voxtrace bench --drive C: --mb 512
 正常 NVMe 上，进世界后约 **3–6 秒**完成取密钥与首条音轨。
 
 ---
+
+## 8.1 多区域服务器
+
+默认只接管日本区：
+
+```json
+"relay_prefix": "82.117.224.0/24"
+```
+
+如果 VRChat 选择美区/欧区，需要把对应 Photon 网段一起写入（逗号分隔）：
+
+```json
+"relay_prefix": "82.117.224.0/24,203.0.113.0/24,198.51.100.0/24"
+```
+
+获取某个区域的网段：
+
+1. 在游戏内切到目标区域并进入世界
+2. 管理员 PowerShell 抓 10 秒包：
+
+```powershell
+pktmon start --capture --pkt-size 128
+Start-Sleep -Seconds 10
+pktmon stop
+pktmon format PktMon.etl -o pm.txt
+Select-String pm.txt -Pattern "27002" | Select-Object -First 20
+```
+
+3. 记录远端 IP，取它所在的 /24
+4. 写入 `config.json` 的 `relay_prefix`，重启中继
+
+每个网段都会被指向 VRCProxy（metric 1）；如果 UU 也路由同一段，我们的路由优先。
+停止中继时只会删除 VRCProxy 上的路由，不会动 UU 的。
 
 ## 9. 常见问题
 

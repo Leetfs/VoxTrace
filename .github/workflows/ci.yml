@@ -30,5 +30,9 @@ jobs:
         shell: cmd
         run: scripts\build_fastscan.cmd
 
+      - name: Build relay (compile check)
+        shell: cmd
+        run: dotnet build relay -c Release
+
       - name: Smoke test CLI
         run: python -m voxtrace --help

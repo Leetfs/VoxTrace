@@ -29,6 +29,10 @@ jobs:
         shell: cmd
         run: scripts\build_fastscan.cmd
 
+      - name: Build relay (compile check)
+        shell: cmd
+        run: dotnet build relay -c Release
+
       - name: Stage source archive
         shell: pwsh
         run: |

@@ -128,7 +128,7 @@ python -m voxtrace locate --file pagefile.sys --drive C:       # 需要管理员
 | `fastscan_exe` | `bin/FastScan.exe` | 高速 pagefile 扫描器 |
 | `dotnet_root` | 空 | 便携版 .NET 根目录（可选） |
 | `pagefile_drive` | `C:` | pagefile 所在卷 |
-| `relay_prefix` | `82.117.224.0/24` | 中继路由前缀 |
+| `relay_prefix` | `82.117.224.0/24` | 中继路由前缀，多个用逗号分隔（见 MANUAL 多区域） |
 | `relay_port` | `27002` | 抓取的 UDP 端口 |
 | `scan_workers` | `4` | Python 兜底扫描的进程数（正常路径不走它） |
 | `fastscan_threads` | `4` | FastScan 直接读卷时的线程数 |
@@ -159,6 +159,7 @@ python -m voxtrace locate --file pagefile.sys --drive C:       # 需要管理员
 - 不支持 TLS 侧（WSS）流量解密；语音与房间数据走 UDP
 - 切换世界时按 `_sN` 分段，不会自动合并为单文件
 - 长时间挂机需要手动轮转抓包文件
+- 默认只配置了日本区网段；美/欧区需把对应 Photon 网段加入 `relay_prefix`
 - 与 UU 等加速器默认会争抢同一段路由，见 MANUAL 说明
 
 ## 许可证

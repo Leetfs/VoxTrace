@@ -41,6 +41,16 @@ scripts\build_gui.cmd
 也可以直接使用已有的中继构建产物，只要 `config.json` 的 `relay_exe`
 指向它即可。
 
+## 4.1 中继多网段
+
+中继支持逗号分隔的多个网段：
+
+```powershell
+bin\VrcWintunPoc.exe --prefix "82.117.224.0/24,203.0.113.0/24" --port 27002 --dump captures\voice.txt
+```
+
+GUI 会读取 `config.json` 的 `relay_prefix` 并原样传入。
+
 ## 5. 名字辅助程序（可选）
 
 自动名字依赖 Protocol18 嵌套字典解析：

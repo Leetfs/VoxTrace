@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -46,9 +47,9 @@ namespace VrcWintunPoc
         private static int _gamePort;
         private static IPAddress _gameIp;
         private static IPAddress _server;
-        private static string _routePrefix;
-        private static byte[] _prefixNet;
-        private static int _prefixBits;
+        private static readonly List<string> _prefixes = new List<string>();
+        private static readonly List<byte[]> _prefixNets = new List<byte[]>();
+        private static readonly List<int> _prefixBits = new List<int>();
         private static int _tunIf;
         private static System.IO.StreamWriter _dump;
         private static readonly object _dumpLock = new object();
@@ -74,22 +75,31 @@ namespace VrcWintunPoc
             IPAddress server = null;
             int port = 27002;
             string dumpPath = null;
-            string prefix = null;
+            var prefixArgs = new List<string>();
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i] == "--server" && i + 1 < args.Length) server = IPAddress.Parse(args[++i]);
                 else if (args[i] == "--port" && i + 1 < args.Length) port = int.Parse(args[++i]);
                 else if (args[i] == "--dump" && i + 1 < args.Length) dumpPath = args[++i];
-                else if (args[i] == "--prefix" && i + 1 < args.Length) prefix = args[++i];
+                else if ((args[i] == "--prefix" || args[i] == "--prefixes") && i + 1 < args.Length)
+                    prefixArgs.AddRange(args[++i].Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries));
             }
-            if (server == null && prefix == null)
+            if (server == null && prefixArgs.Count == 0)
             {
-                Console.Error.WriteLine("usage: VrcWintunPoc --prefix <cidr> [--port 27002]   (or --server <ip>)");
+                Console.Error.WriteLine("usage: VrcWintunPoc --prefix <cidr[,cidr...]> [--port 27002]   (or --server <ip>)");
                 return 2;
             }
             _server = server;
-            _routePrefix = prefix ?? $"{server}/32";
-            if (prefix != null) ParsePrefix(prefix, out _prefixNet, out _prefixBits);
+            if (prefixArgs.Count == 0) prefixArgs.Add(server + "/32");
+            foreach (var item in prefixArgs)
+            {
+                byte[] net; int bits;
+                ParsePrefix(item, out net, out bits);
+                _prefixes.Add(item);
+                _prefixNets.Add(net);
+                _prefixBits.Add(bits);
+            }
+            Console.WriteLine("prefixes: " + string.Join(", ", _prefixes));
             if (dumpPath != null)
             {
                 _dump = new System.IO.StreamWriter(dumpPath, false);
@@ -117,9 +127,16 @@ namespace VrcWintunPoc
                 int tunIf = int.Parse(idxText.Trim());
                 _tunIf = tunIf;
                 Console.WriteLine($"tunnel ifIndex={tunIf}");
-                Run("powershell", $"-NoProfile -Command \"New-NetRoute -DestinationPrefix '{_routePrefix}' -InterfaceIndex {tunIf} -NextHop 0.0.0.0 -RouteMetric 1 -ErrorAction Stop\"");
-                string check = Run("powershell", $"-NoProfile -Command \"(Get-NetRoute -DestinationPrefix '{_routePrefix}' | Select-Object -First 1 | ForEach-Object {{ $_.InterfaceIndex }})\"");
-                Console.WriteLine($"route check: {_routePrefix} -> ifIndex {check.Trim()}");
+                foreach (var item in _prefixes)
+                {
+                    Run("powershell", $"-NoProfile -Command \"Remove-NetRoute -DestinationPrefix '{item}' -InterfaceIndex {tunIf} -Confirm:$false -ErrorAction SilentlyContinue\"");
+                    Run("powershell", $"-NoProfile -Command \"New-NetRoute -DestinationPrefix '{item}' -InterfaceIndex {tunIf} -NextHop 0.0.0.0 -RouteMetric 1 -ErrorAction Stop\"");
+                }
+                foreach (var item in _prefixes)
+                {
+                    string check = Run("powershell", $"-NoProfile -Command \"(Get-NetRoute -DestinationPrefix '{item}' | Where-Object {{ $_.InterfaceIndex -eq {tunIf} }} | Select-Object -First 1 | ForEach-Object {{ $_.InterfaceIndex }})\"");
+                    Console.WriteLine($"route check: {item} -> ifIndex {check.Trim()}");
+                }
 
                 IntPtr session = WintunStartSession(adapter, 0x400000);
                 if (session == IntPtr.Zero)
@@ -133,7 +150,7 @@ namespace VrcWintunPoc
                 socket.SetSocketOption(SocketOptionLevel.IP, (SocketOptionName)IpUnicastIf,
                     BitConverter.GetBytes(IPAddress.HostToNetworkOrder((int)physIf)));
 
-                Console.WriteLine($"relay socket {socket.LocalEndPoint}, target {server}:{port}");
+                Console.WriteLine($"relay socket {socket.LocalEndPoint}, target {(server == null ? "dynamic" : server + ":" + port)}");
                 Console.WriteLine("Intercepting... Ctrl+C to stop.");
 
                 new Thread(() => ReceiveLoop(socket, session)) { IsBackground = true }.Start();
@@ -258,28 +275,40 @@ namespace VrcWintunPoc
 
         private static bool InPrefix(IPAddress ip)
         {
-            if (_prefixNet == null) return _server != null && ip.Equals(_server);
+            if (_prefixNets.Count == 0) return _server != null && ip.Equals(_server);
             var b = ip.GetAddressBytes();
-            int full = _prefixBits / 8;
-            int rem = _prefixBits % 8;
+            for (int p = 0; p < _prefixNets.Count; p++)
+                if (InSinglePrefix(b, _prefixNets[p], _prefixBits[p])) return true;
+            return false;
+        }
+
+        private static bool InSinglePrefix(byte[] b, byte[] net, int bits)
+        {
+            int full = bits / 8;
+            int rem = bits % 8;
             for (int i = 0; i < full; i++)
-                if (b[i] != _prefixNet[i]) return false;
+                if (b[i] != net[i]) return false;
             if (rem > 0)
             {
                 int mask = 0xFF << (8 - rem);
-                if ((b[full] & mask) != (_prefixNet[full] & mask)) return false;
+                if ((b[full] & mask) != (net[full] & mask)) return false;
             }
             return true;
         }
 
         private static void Cleanup()
         {
-            if (_server == null) return;
-            try
+            foreach (var item in _prefixes)
             {
-                Run("powershell", $"-NoProfile -Command \"Remove-NetRoute -DestinationPrefix '{_routePrefix}' -Confirm:$false -ErrorAction SilentlyContinue\"");
+                try
+                {
+                    if (_tunIf > 0)
+                        Run("powershell", $"-NoProfile -Command \"Remove-NetRoute -DestinationPrefix '{item}' -InterfaceIndex {_tunIf} -Confirm:$false -ErrorAction SilentlyContinue\"");
+                    else
+                        Run("powershell", $"-NoProfile -Command \"Remove-NetRoute -DestinationPrefix '{item}' -Confirm:$false -ErrorAction SilentlyContinue\"");
+                }
+                catch { }
             }
-            catch { }
             try
             {
                 Run("powershell", $"-NoProfile -Command \"Remove-NetIPAddress -InterfaceAlias '{AdapterName}' -Confirm:$false -ErrorAction SilentlyContinue\"");
