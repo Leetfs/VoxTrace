@@ -47,6 +47,7 @@ namespace VrcWintunPoc
         private static int _gamePort;
         private static IPAddress _gameIp;
         private static IPAddress _server;
+        private static readonly HashSet<string> _dstSeen = new HashSet<string>();
         private static readonly List<string> _prefixes = new List<string>();
         private static readonly List<byte[]> _prefixNets = new List<byte[]>();
         private static readonly List<int> _prefixBits = new List<int>();
@@ -182,6 +183,8 @@ namespace VrcWintunPoc
                         int dport = (buf[ihl + 2] << 8) | buf[ihl + 3];
 
                         if (dport != port || !InPrefix(dstIp)) continue;
+                        if (_dstSeen.Count < 16 && _dstSeen.Add(dstIp.ToString()))
+                            Console.WriteLine("dst seen: " + dstIp);
 
                         var payload = new byte[payloadLen];
                         Buffer.BlockCopy(buf, ihl + 8, payload, 0, payloadLen);

@@ -8,7 +8,7 @@
   "eventparse_exe": "bin\\eventparse\\eventparse.exe",
   "dotnet_root": "",
   "pagefile_drive": "C:",
-  "relay_prefix": "82.117.224.0/24",
+  "relay_prefix": "82.117.224.0/24,188.241.71.0/24,86.105.169.0/24,80.93.214.0/24",
   "relay_port": 27002,
   "scan_workers": 4,
   "fastscan_threads": 4,

@@ -1,4 +1,4 @@
-# local configuration and data
+﻿# local configuration and data
 config.json
 captures/
 bin/
@@ -19,3 +19,7 @@ obj/
 *.tmp
 
 samples/
+
+/uu_routes*
+/uu_photon_candidates.txt
+

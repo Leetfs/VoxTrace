@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3
+
+- 实测 jp / use / usw / eu 四个区域的 Photon 网段，写入默认配置
+- 新增区域采集脚本：`find_region_ips.ps1`、`collect_region_maps.ps1`
+- 新增 pcapng 验证器：按 UDP 27002 + Photon 头部 + GCM 过滤，排除 CDN/API
+- 中继增加 `dst seen` 日志，便于确认实际服务器 IP
+
 ## 0.1.2
 
 - 密钥校验改为只认抓包末尾的最新 8 个数据报，避免上一局残留密钥被误选

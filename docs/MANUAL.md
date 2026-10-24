@@ -1,6 +1,6 @@
 # VoxTrace 使用说明书
 
-版本：0.1.2  
+版本：0.1.3  
 适用平台：Windows 10 / 11 x64
 
 > 使用前请阅读 [DISCLAIMER.md](../DISCLAIMER.md)。本工具会录制他人语音、读取系统
@@ -240,33 +240,31 @@ python -m voxtrace bench --drive C: --mb 512
 
 ## 8.1 多区域服务器
 
-默认只接管日本区：
+2026-10-24 用多张地图实测，四个区域各只有一个 /24：
+
+| 区域 | 网段 | 实测 IP |
+|---|---|---|
+| jp | `82.117.224.0/24` | .46 / .104 / .105 / .112 / .170 / .209 / .234 |
+| use | `188.241.71.0/24` | .14 / .114 / .157 / .193 |
+| usw | `86.105.169.0/24` | .110 / .125 / .213 |
+| eu | `80.93.214.0/24` | .160 / .161 |
+
+`config.example.json` 默认：
 
 ```json
-"relay_prefix": "82.117.224.0/24"
+"relay_prefix": "82.117.224.0/24,188.241.71.0/24,86.105.169.0/24,80.93.214.0/24"
 ```
 
-如果 VRChat 选择美区/欧区，需要把对应 Photon 网段一起写入（逗号分隔）：
-
-```json
-"relay_prefix": "82.117.224.0/24,203.0.113.0/24,198.51.100.0/24"
-```
-
-获取某个区域的网段：
-
-1. 在游戏内切到目标区域并进入世界
-2. 管理员 PowerShell 抓 10 秒包：
+采集其他区域：
 
 ```powershell
-pktmon start --capture --pkt-size 128
-Start-Sleep -Seconds 10
-pktmon stop
-pktmon format PktMon.etl -o pm.txt
-Select-String pm.txt -Pattern "27002" | Select-Object -First 20
+# 单地图
+powershell -ExecutionPolicy Bypass -File scripts\find_region_ips.ps1 -Region asia -Seconds 120
+# 同区域多地图
+powershell -ExecutionPolicy Bypass -File scripts\collect_region_maps.ps1 -Region asia -SecondsPerMap 120
 ```
 
-3. 记录远端 IP，取它所在的 /24
-4. 写入 `config.json` 的 `relay_prefix`，重启中继
+脚本会用 pktmon 抓 UDP 27002，再用 `scripts/verify_photon_pcap.py` 做 Photon 头部与 GCM 校验。
 
 每个网段都会被指向 VRCProxy（metric 1）；如果 UU 也路由同一段，我们的路由优先。
 停止中继时只会删除 VRCProxy 上的路由，不会动 UU 的。
