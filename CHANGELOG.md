@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4
+
+- 新增完整 Photon 解析器：事件、操作、参数表统一解码为 JSONL
+- 新增 `scripts/photon_dump.py` 与 `summary.json` 字段统计
+- 新增 `docs/PHOTON.md`：OpCode、事件码、玩家属性、Avatar 字段、位置同步说明
+- `eventparse` 支持 OperationResponse 与递归 JSON 输出
+- 文档标注 JoinRoom 中的认证串与抓包隐私风险
+
 ## 0.1.3
 
 - 实测 jp / use / usw / eu 四个区域的 Photon 网段，写入默认配置

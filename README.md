@@ -62,7 +62,8 @@ VRChat ──UDP──▶ Wintun 中继 ──▶ 抓包（密文）
 4. 按发送者/身份增量写入 WAV；Event 253 提供玩家名映射
 
 细节见 [docs/PROTOCOL.md](docs/PROTOCOL.md) 与
-[docs/KEY_EXTRACTION.md](docs/KEY_EXTRACTION.md)。
+[docs/KEY_EXTRACTION.md](docs/KEY_EXTRACTION.md)；Photon 事件、OpCode、玩家属性与位置同步见
+[docs/PHOTON.md](docs/PHOTON.md)。
 
 ## 快速开始
 

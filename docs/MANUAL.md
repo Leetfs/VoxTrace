@@ -1,6 +1,6 @@
 # VoxTrace 使用说明书
 
-版本：0.1.3  
+版本：0.1.4  
 适用平台：Windows 10 / 11 x64
 
 > 使用前请阅读 [DISCLAIMER.md](../DISCLAIMER.md)。本工具会录制他人语音、读取系统
@@ -222,6 +222,7 @@ python -m voxtrace bench --drive C: --mb 512
 5. 按 `usr_` 身份写 WAV，世界切换时按 `_sN` 分段
 
 细节见 [PROTOCOL.md](PROTOCOL.md) 与 [KEY_EXTRACTION.md](KEY_EXTRACTION.md)。
+Photon 事件、OpCode、玩家属性与位置同步见 [PHOTON.md](PHOTON.md)。
 
 ---
 
