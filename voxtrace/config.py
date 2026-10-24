@@ -22,6 +22,7 @@ DEFAULTS = {
     "fastscan_threads": 4,
     "settle_seconds": 2.0,
     "drain_timeout": 10.0,
+    "gap_fill": "silence",
     "relay_prefix": "82.117.224.0/24",
     "relay_port": 27002,
 }

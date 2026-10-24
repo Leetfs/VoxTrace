@@ -134,6 +134,7 @@ python -m voxtrace locate --file pagefile.sys --drive C:       # 需要管理员
 | `fastscan_threads` | `4` | FastScan 直接读卷时的线程数 |
 | `settle_seconds` | `2` | 无法查询修改页列表时的固定等待 |
 | `drain_timeout` | `10` | 修改页列表排空的最长等待（慢盘可调大） |
+| `gap_fill` | `silence` | 语音包缺口填充：`silence` / `plc` |
 
 ## 环境要求
 
@@ -160,7 +161,7 @@ python -m voxtrace locate --file pagefile.sys --drive C:       # 需要管理员
 - 切换世界时按 `_sN` 分段，不会自动合并为单文件
 - 长时间挂机需要手动轮转抓包文件
 - 默认只配置了日本区网段；美/欧区需把对应 Photon 网段加入 `relay_prefix`
-- 与 UU 等加速器默认会争抢同一段路由，见 MANUAL 说明
+- 与 UU 路由模式可以串接，但必须先开 UU 再启动 VoxTrace（见 MANUAL 8.2）
 
 ## 许可证
 

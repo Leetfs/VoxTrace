@@ -38,7 +38,10 @@ class Stream:
         self.path = os.path.join(outdir, "player_%s%s.wav" % (base, suffix))
         self.wav = WavWriter(self.path)
         self.decoder = Decoder(cfg)
+        self.cfg = cfg
+        self.gap_fill = cfg.get("gap_fill", "silence")
         self.last_index = None
+        self.last_rms = 0.0
         self.samples = 0
         self.packets = 0
         self.gaps = 0
@@ -53,14 +56,29 @@ class Stream:
             if delta == 0:
                 self.dups += 1
                 return
-            if 1 < delta <= 50:
-                self.gaps += delta - 1
-                self.wav.write_pcm(self.decoder.plc(delta - 1))
+            missing = delta - 1
+            if 1 <= missing <= 50:
+                self.gaps += missing
+                filler = self.decoder.plc(missing)
+                use_plc = (self.gap_fill == "plc" and self.last_rms > 400 and missing <= 3)
+                if use_plc:
+                    self.wav.write_pcm(filler)
+                else:
+                    self.wav.write_pcm([0] * (960 * missing))
+            elif missing > 50:
+                # long DTX gap: reset the decoder instead of synthesizing seconds of audio
+                self.gaps += missing
+                try:
+                    self.decoder.close()
+                except Exception:
+                    pass
+                self.decoder = Decoder(self.cfg)
         pcm = self.decoder.decode(packet)
         if pcm:
             self.wav.write_pcm(pcm)
             self.samples += len(pcm)
             self.last_index = index
+            self.last_rms = (sum(v * v for v in pcm) / len(pcm)) ** 0.5
 
     def flush(self):
         self.wav.flush()

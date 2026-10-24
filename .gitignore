@@ -17,3 +17,5 @@ obj/
 *.pdb
 *.log
 *.tmp
+
+samples/

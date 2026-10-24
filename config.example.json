@@ -13,5 +13,6 @@
   "scan_workers": 4,
   "fastscan_threads": 4,
   "settle_seconds": 2,
-  "drain_timeout": 10
+  "drain_timeout": 10,
+  "gap_fill": "silence"
 }

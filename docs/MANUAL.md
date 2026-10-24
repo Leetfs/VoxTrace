@@ -1,6 +1,6 @@
 # VoxTrace 使用说明书
 
-版本：0.1.0  
+版本：0.1.1  
 适用平台：Windows 10 / 11 x64
 
 > 使用前请阅读 [DISCLAIMER.md](../DISCLAIMER.md)。本工具会录制他人语音、读取系统
@@ -112,6 +112,7 @@ scripts\build_fastscan.cmd
 | `fastscan_threads` | FastScan 直接读卷的线程数 |
 | `settle_seconds` | 无法查询修改页列表时的固定等待 |
 | `drain_timeout` | 修改页列表排空的最长等待秒数 |
+| `gap_fill` | 缺口填充：`silence`（默认）或 `plc` |
 
 > `config.json` 已被 `.gitignore` 排除，不会被提交。
 
@@ -269,6 +270,20 @@ Select-String pm.txt -Pattern "27002" | Select-Object -First 20
 
 每个网段都会被指向 VRCProxy（metric 1）；如果 UU 也路由同一段，我们的路由优先。
 停止中继时只会删除 VRCProxy 上的路由，不会动 UU 的。
+
+## 8.2 与 UU 加速器共存
+
+UU 的「路由模式」和 VoxTrace 中继都用 Wintun + 路由，可以串接：
+
+```
+VRChat → VRCProxy（我们）→ UU 隧道 → UU 服务器
+```
+
+前提是**先开 UU、再点一键开始**。中继启动时会用 `GetBestInterface` 选择出口，
+UU 已在运行时出口就是 UU 网卡；如果顺序反过来，中继会锁定物理网卡，语音不再
+经过 UU 加速（抓包仍然正常）。
+
+验证方法：中继日志出现 `physical ifIndex=<UU 网卡的 ifIndex>` 即表示走 UU。
 
 ## 9. 常见问题
 
