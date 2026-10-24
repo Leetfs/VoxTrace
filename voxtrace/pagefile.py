@@ -6,6 +6,7 @@ validated on a 1.8 TB NTFS volume with a 3 GB pagefile.
 import ctypes
 import ctypes.wintypes as wt
 import os
+from collections import deque
 import struct
 
 from Crypto.Cipher import AES
@@ -190,16 +191,16 @@ def locate(drive, filename):
 
 
 def iter_ciphertexts(capture, limit=8, tail=True):
-    """Collect (aad, nonce, ciphertext, tag) tuples from a capture file.
+    """Collect the newest (aad, nonce, ciphertext, tag) tuples from a capture.
 
-    With ``tail=True`` only the last 4 MiB are read, so reconnects that rotate
-    the key still verify against recent traffic instead of stale packets.
+    Only the last ``limit`` encrypted datagrams are kept, so a key from a
+    previous VRChat session cannot verify against stale packets at the start
+    of the file.
     """
-    out = []
+    out = deque(maxlen=limit)
     start = 0
     if tail:
-        import os as _os
-        size = _os.path.getsize(capture)
+        size = os.path.getsize(capture)
         start = max(0, size - 4 * 1024 * 1024)
     with open(capture, "r", errors="ignore") as f:
         if start:
@@ -220,21 +221,20 @@ def iter_ciphertexts(capture, limit=8, tail=True):
                 continue
             nonce, ct, tag = blob[:12], blob[12:-16], blob[-16:]
             out.append((header + nonce, nonce, ct, tag))
-            if len(out) > limit:
-                out.pop(0)
-    return out
+    return list(out)
 
 
 def _verify(key, ciphertexts):
+    if not ciphertexts:
+        return False
     for aad, nonce, ct, tag in ciphertexts:
         try:
             gcm = AES.new(key, AES.MODE_GCM, nonce=nonce)
             gcm.update(aad)
             gcm.decrypt_and_verify(ct, tag)
-            return True
         except Exception:
-            pass
-    return False
+            return False
+    return True
 
 
 def scan_buffer(data, ciphertexts):

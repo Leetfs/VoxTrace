@@ -594,6 +594,14 @@ namespace VoxTrace
             if (relay == null || relay.HasExited) { return; }
             if (capturePath == null || !File.Exists(capturePath)) return;
 
+            int currentPid = VrcPid();
+            if (currentPid != 0 && lastVrcPid != 0 && currentPid != lastVrcPid)
+            {
+                RestartCaptureForNewPid(currentPid);
+                return;
+            }
+            if (currentPid != 0 && lastVrcPid == 0) lastVrcPid = currentPid;
+
             if (sessionKey == null)
             {
                 if (extracting) return;
@@ -677,7 +685,7 @@ namespace VoxTrace
             long pid = VrcPid();
             if (pid != 0 && lastVrcPid != 0 && pid != lastVrcPid)
             {
-                ExpireKey("VRChat 进程已变化（重启或重连）");
+                RestartCaptureForNewPid((int)pid);
                 return;
             }
             long packets = StatsPackets();
@@ -693,6 +701,37 @@ namespace VoxTrace
             {
                 ExpireKey("抓包持续增长但解密停止（密钥失效）");
             }
+        }
+
+        private void RestartCaptureForNewPid(int pid)
+        {
+            PipelineLog("VRChat 进程变化，重建抓包文件 pid=" + pid);
+            try
+            {
+                if (relay != null && !relay.HasExited)
+                {
+                    relay.Kill();
+                    relay.WaitForExit(3000);
+                }
+            }
+            catch { }
+            relay = null;
+            sessionKey = null;
+            extracting = false;
+            StopLive();
+            capturePath = null;
+            lastVrcPid = pid;
+            lastStatsPackets = 0;
+            lastPacketChange = DateTime.Now;
+            lastCaptureSize = 0;
+            loadedAt = DateTime.MinValue;
+            readySince = DateTime.MinValue;
+            extractAttempts = 0;
+            eligibleAt = DateTime.Now.AddSeconds(2);
+            autoMode = true;
+            InitLogWatch(true);
+            statusLabel.Text = "VRChat 已重启，正在重建抓包…";
+            StartListening();
         }
 
         private void ExpireKey(string reason)

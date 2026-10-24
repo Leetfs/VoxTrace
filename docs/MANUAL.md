@@ -1,6 +1,6 @@
 # VoxTrace 使用说明书
 
-版本：0.1.1  
+版本：0.1.2  
 适用平台：Windows 10 / 11 x64
 
 > 使用前请阅读 [DISCLAIMER.md](../DISCLAIMER.md)。本工具会录制他人语音、读取系统
